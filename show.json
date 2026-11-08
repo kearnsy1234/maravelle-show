@@ -1,0 +1,110 @@
+{
+ "v": 6,
+ "rev": "start-1",
+ "at": 1794147290625,
+ "app": 1794147290,
+ "cfg": {
+  "bg": {
+   "color": "#16391d",
+   "dim": 0,
+   "fit": "contain",
+   "media": "builtin",
+   "mediaName": "Ghaf Woods × Maravelle",
+   "ref": null,
+   "type": "media"
+  },
+  "buttons": [
+   {
+    "color": "#2f7d4a",
+    "id": "mw7v17m8je6y3",
+    "label": "Neil Carruthers - Morning Walk on",
+    "loop": false,
+    "media": {
+     "key": "m-mw7vpp7pkjxyf",
+     "name": "Neil Carruthers - Morning Walk on.mp3",
+     "size": 159285,
+     "type": "audio/mpeg",
+     "path": "media/m-mw7vpp7pkjxyf.mp3"
+    },
+    "tap": "stop",
+    "volume": 100,
+    "x": 33,
+    "y": 50
+   },
+   {
+    "color": "#2f7d4a",
+    "id": "mw7v17m84mlo1",
+    "label": "PreShow (House Open)",
+    "loop": false,
+    "media": {
+     "key": "m-mw7vqrzwywt3z",
+     "name": "PreShow (House Open).mp3",
+     "size": 143821,
+     "type": "audio/mpeg",
+     "path": "media/m-mw7vqrzwywt3z.mp3"
+    },
+    "tap": "stop",
+    "volume": 100,
+    "x": 67,
+    "y": 50
+   },
+   {
+    "color": "#2f7d4a",
+    "id": "mw7v17m85div8",
+    "label": "Post Event Networking",
+    "loop": false,
+    "media": {
+     "key": "m-mw7vqx9d587lh",
+     "name": "Post Event Networking.mp3",
+     "size": 208186,
+     "type": "audio/mpeg",
+     "path": "media/m-mw7vqx9d587lh.mp3"
+    },
+    "tap": "stop",
+    "volume": 100,
+    "x": 33,
+    "y": 67
+   },
+   {
+    "color": "#2f7d4a",
+    "id": "mw7v17m8gp75b",
+    "label": "Optional Followup",
+    "loop": false,
+    "media": {
+     "key": "m-mw7vr3i3kbyy1",
+     "name": "Optional Followup .mp3",
+     "size": 94501,
+     "type": "audio/mpeg",
+     "path": "media/m-mw7vr3i3kbyy1.mp3"
+    },
+    "tap": "stop",
+    "volume": 100,
+    "x": 67,
+    "y": 67
+   },
+   {
+    "color": "#2f7d4a",
+    "id": "mw7v17m8pzksa",
+    "label": "Final Call 2minutes",
+    "loop": false,
+    "media": {
+     "key": "m-mw7vr8b8canqc",
+     "name": "Final Call 2minutes.mp3",
+     "size": 58139,
+     "type": "audio/mpeg",
+     "path": "media/m-mw7vr8b8canqc.mp3"
+    },
+    "tap": "stop",
+    "volume": 100,
+    "x": 50,
+    "y": 84
+   }
+  ],
+  "code": "1234",
+  "exclusive": true,
+  "fadeMs": 800,
+  "layers": [],
+  "size": 100,
+  "title": ""
+ }
+}

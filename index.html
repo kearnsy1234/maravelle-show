@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Maravelle">
+<meta name="theme-color" content="#16391d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="icon" href="assets/icon-192.png">
+<title>Maravelle Show Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#f4f6fb; --ink-dim:rgba(244,246,251,.62); --ink-faint:rgba(244,246,251,.38);
+    --panel:#11141d; --panel-2:#181c28; --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
+    --accent:#ebb08c; --danger:#ff5a5f;
+    --font:'Jost',system-ui,-apple-system,Segoe UI,sans-serif;
+    --mono:'Jost',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05060a;color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent}
+  body.hide-cursor, body.hide-cursor *{cursor:none!important}
+  button{font-family:inherit;color:inherit}
+
+  /* ---------- Background ---------- */
+  #bg{position:fixed;inset:0;z-index:0;background:#070912;background-size:cover;background-position:center top;background-repeat:no-repeat}
+  #bg video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
+  #bg.contain{background-position:center}
+  #bg{overflow:hidden}
+  #bg .bg-fill{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(40px) brightness(.75) saturate(1.1)}
+  #bg .bg-img{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat}
+  #bg.contain video{object-position:center}
+  #bg.contain video{object-fit:contain}
+  #dim{position:fixed;inset:0;z-index:1;background:#000;opacity:.3;pointer-events:none}
+
+  /* ---------- Stage ---------- */
+  #stage{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:min(100vw,calc(100vh * 0.7496));height:min(100vh,calc(100vw / 0.7496))}
+  @supports (height:100dvh){ #stage{width:min(100vw,calc(100dvh * 0.7496));height:min(100dvh,calc(100vw / 0.7496))} }
+  #showTitle{position:absolute;left:50%;top:6%;transform:translateX(-50%);margin:0;width:90%;font-weight:600;letter-spacing:.02em;font-size:clamp(22px,3.6vw,48px);text-align:center;text-shadow:0 2px 24px rgba(0,0,0,.5);pointer-events:none}
+  #showTitle:empty{display:none}
+  #pads{position:absolute;inset:0;pointer-events:none}
+  #pads .pad{pointer-events:auto}
+  #layers{position:absolute;inset:0}
+  .layer{position:absolute;transform:translate(-50%,-50%);height:auto;user-select:none;-webkit-user-drag:none;pointer-events:none;touch-action:none}
+  body.editing .layer{pointer-events:auto;cursor:grab;outline:1px dashed rgba(255,255,255,.25);outline-offset:6px}
+  body.editing .layer:hover{outline-color:rgba(255,255,255,.55)}
+  body.editing .layer.dragging{cursor:grabbing;outline-color:var(--accent)}
+  .logo-tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .logo-tile{background:#1c3324;border:1px solid var(--line-2);border-radius:12px;padding:14px;height:110px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .logo-tile:hover{border-color:var(--accent)}
+  .logo-tile img{max-width:100%;max-height:100%}
+  .logo-tile.upload{background:#0b0d14;border-style:dashed;color:var(--ink-dim);font-size:14px;flex-direction:column;gap:6px}
+  .guide{position:absolute;display:none;pointer-events:none;background:var(--accent);opacity:.7}
+  .guide.v{top:0;bottom:0;left:50%;width:1px}
+  .guide.h{left:0;right:0;top:50%;height:1px}
+  .guide.on{display:block}
+
+  .pad{position:absolute;transform:translate(-50%,-50%);width:calc(var(--sw,768px) * .174 * var(--scale,1));aspect-ratio:1/1;
+       background:var(--c);color:var(--tc);display:flex;align-items:center;justify-content:center;text-align:center;padding:calc(var(--sw,768px) * .016 * var(--scale,1));box-sizing:border-box;
+       cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:transform .1s ease, box-shadow .2s, opacity .2s;
+       font-family:var(--font);font-weight:500;font-size:calc(var(--sw,768px) * .0215 * var(--scale,1));line-height:1.2}
+  .pad .label{word-break:break-word;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .pad:active{transform:translate(-50%,-50%) scale(.97)}
+  .pad:focus-visible{outline:3px solid #fff;outline-offset:3px}
+  .pad.playing{box-shadow:inset 0 0 0 6px var(--tc)}
+  .pad.empty{opacity:.45}
+  body.editing .pad{cursor:grab;outline:1px dashed rgba(255,255,255,.55);outline-offset:6px}
+  body.editing .pad.dragging{cursor:grabbing;transition:none;transform:translate(-50%,-50%) scale(1.04);z-index:5;outline-color:var(--accent)}
+
+  /* ---------- Hidden hotspot ---------- */
+  #hotspot{position:fixed;top:0;right:0;width:72px;height:72px;z-index:5}
+  body.editing #hotspot{display:none}
+
+  /* ---------- Edit toolbar ---------- */
+  #toolbar{position:fixed;top:0;left:0;right:0;z-index:10;display:none;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 18px;background:rgba(8,9,14,.88);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+  body.editing #toolbar{display:flex}
+  #toolbar .badge{white-space:nowrap;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:#1a1400;background:var(--accent);padding:5px 9px;border-radius:6px;font-weight:500}
+  #toolbar .hint{color:var(--ink-faint);font-size:13px;margin-right:auto;margin-left:6px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn{border:1px solid var(--line-2);background:var(--panel-2);border-radius:10px;padding:9px 14px;font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+  .btn:hover{background:#222839}
+  .btn.primary{background:var(--accent);color:#1a1400;border-color:var(--accent);font-weight:600}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.danger{color:var(--danger);border-color:rgba(255,90,95,.4);background:transparent}
+  .btn.ghost{background:transparent}
+  .btn svg{width:16px;height:16px}
+
+  .sync{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;padding:6px 11px;border-radius:999px;border:1px solid var(--line-2);white-space:nowrap;color:var(--ink-dim)}
+  .sync i{width:8px;height:8px;border-radius:50%;background:#7b8394;flex:none}
+  .sync.ok i{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.18)}
+  .sync.busy i{background:var(--accent);animation:pulse 1s ease-in-out infinite}
+  .sync.warn{color:#ffd29a;border-color:rgba(255,190,110,.4)} .sync.warn i{background:#f5a524}
+  #storageWarn{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:9;background:#3a1517;border:1px solid rgba(255,90,95,.5);color:#ffd2d3;font-size:13px;padding:8px 14px;border-radius:10px;display:none}
+  body.editing #storageWarn.on{display:block}
+
+  /* ---------- Modals ---------- */
+  .scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+  .scrim.open{display:flex}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;width:min(460px,100%);max-height:calc(100vh - 40px);overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .sheet header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 6px}
+  .sheet h2{margin:0;font-size:18px;font-weight:600}
+  .sheet .body{padding:12px 20px 20px;display:flex;flex-direction:column;gap:16px}
+  .sheet footer{display:flex;gap:10px;justify-content:flex-end;padding:0 20px 20px}
+  .x{background:none;border:0;color:var(--ink-dim);font-size:22px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px}
+  .x:hover{background:var(--panel-2);color:var(--ink)}
+  .field{display:flex;flex-direction:column;gap:7px}
+  .field > label, .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+  input[type=text],input[type=password]{background:#0b0d14;border:1px solid var(--line-2);border-radius:10px;padding:11px 12px;color:var(--ink);font:inherit;font-size:15px;width:100%}
+  input[type=text]:focus,input[type=password]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .filebox{border:1px dashed var(--line-2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;background:#0b0d14}
+  .filebox .meta{flex:1;min-width:0}
+  .filebox .fname{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .filebox .fsub{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-top:3px}
+  .filebox.drag{border-color:var(--accent);background:#15140c}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap}
+  .sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+  .sw.on{border-color:#fff}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  input[type=color]{width:44px;height:34px;border:1px solid var(--line-2);border-radius:8px;background:#0b0d14;padding:2px;cursor:pointer}
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;cursor:pointer}
+  .toggle small{display:block;color:var(--ink-faint);font-size:12px;margin-top:2px}
+  .switch{position:relative;width:42px;height:24px;flex:none}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch span{position:absolute;inset:0;background:#2a2f3d;border-radius:999px;transition:.2s}
+  .switch span::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .switch input:checked + span{background:var(--accent)}
+  .switch input:checked + span::after{transform:translateX(18px)}
+  .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden}
+  .seg button{background:transparent;border:0;padding:8px 12px;font-size:13px;cursor:pointer;color:var(--ink-dim)}
+  .seg button.on{background:var(--panel-2);color:var(--ink)}
+  .divider{height:1px;background:var(--line);margin:2px 0}
+  .err{color:var(--danger);font-size:13px;min-height:1em}
+
+  /* Keypad */
+  #codeSheet{width:min(340px,100%)}
+  .dots{display:flex;justify-content:center;gap:12px;margin:6px 0 4px;min-height:18px}
+  .dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line-2)}
+  .dots i.f{background:var(--ink);border-color:var(--ink)}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .keypad button{height:62px;border-radius:14px;border:1px solid var(--line);background:var(--panel-2);font-size:22px;font-weight:500;cursor:pointer;font-family:var(--mono)}
+  .keypad button:hover{background:#222839}
+  .keypad button.k-ok{background:var(--accent);color:#1a1400;border-color:var(--accent);font-family:var(--font);font-size:16px;font-weight:600}
+  .keypad button.k-clr{font-family:var(--font);font-size:14px;color:var(--ink-dim)}
+  .shake{animation:shake .35s}
+  @keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+  .codehelp{text-align:center;color:var(--ink-faint);font-size:13px}
+
+  #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);opacity:0;z-index:80;background:#1d2230;border:1px solid var(--line-2);padding:10px 16px;border-radius:10px;font-size:14px;transition:.25s;pointer-events:none}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:1100px){ #toolbar .hint{display:none} #toolbar .sync{margin-right:auto} #tbShow{margin-left:auto} }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="dim"></div>
+
+<main id="stage">
+  <h1 id="showTitle"></h1>
+  <div class="guide v" id="guideV"></div><div class="guide h" id="guideH"></div>
+  <div id="layers"></div>
+  <div id="pads"></div>
+</main>
+
+<div id="hotspot" aria-hidden="true"></div>
+
+<div id="toolbar">
+  <span class="badge">EDIT MODE</span>
+  <span class="hint">Drag to move · from show mode, triple-tap top-right corner or press E to return</span>
+  <span class="sync" id="syncPill"><i></i><span>Published</span></span>
+  <button class="btn" id="tbPublish" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0-5 5m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>Publish to all iPads</button>
+  <button class="btn" id="tbAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add button</button>
+  <button class="btn" id="tbLogo" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>Add logo</button>
+  <button class="btn" id="tbBg" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Background</button>
+  <button class="btn" id="tbSettings" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+  <button class="btn" id="tbFull" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>Fullscreen</button>
+  <button class="btn primary" id="tbShow" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Enter Show Mode</button>
+</div>
+
+
+<!-- Code keypad -->
+<div class="scrim" id="codeScrim">
+  <div class="sheet" id="codeSheet" role="dialog" aria-modal="true" aria-labelledby="codeTitle">
+    <header><h2 id="codeTitle">Enter code</h2><button class="x" data-close="codeScrim" aria-label="Close">×</button></header>
+    <div class="body">
+      <div class="dots" id="codeDots"></div>
+      <div class="err" id="codeErr" style="text-align:center"></div>
+      <div class="keypad" id="keypad"></div>
+      <div class="codehelp">Use the keypad or your keyboard.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Button editor -->
+<div class="scrim" id="padScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="padTitle">
+    <header><h2 id="padTitle">Button 1</h2><button class="x" data-close="padScrim" aria-label="Close">×</button></header>
+    <div class="body">
+      <div class="field"><label for="pLabel">Button label</label><input type="text" id="pLabel" maxlength="60" placeholder="e.g. Walk-in music"></div>
+      <div class="field">
+        <span class="lbl">Audio track</span>
+        <div class="filebox" id="pDrop">
+          <div class="meta"><div class="fname" id="pFname">No track loaded</div><div class="fsub" id="pFsub">MP3, WAV, M4A, OGG… drop a file here</div></div>
+          <button class="btn" id="pChoose" type="button">Choose…</button>
+        </div>
+        <input type="file" id="pFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.webm" hidden>
+        <div class="row">
+          <button class="btn" id="pPreview" type="button">▶ Preview</button>
+          <button class="btn danger" id="pRemove" type="button">Remove track</button>
+        </div>
+      </div>
+      <div class="field"><span class="lbl">Colour</span><div class="swatches" id="pSwatches"></div></div>
+      <div class="field"><label for="pVol">Volume <span id="pVolVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="pVol" min="0" max="100" step="1"></div>
+      <label class="toggle"><span>Loop<small>Repeat until stopped</small></span><span class="switch"><input type="checkbox" id="pLoop"><span></span></span></label>
+      <div class="toggle" style="cursor:default"><span>When pressed while playing</span>
+        <div class="seg" id="pTapSeg"><button type="button" data-v="stop">Stop</button><button type="button" data-v="restart">Restart</button></div></div>
+    </div>
+    <footer style="justify-content:space-between"><button class="btn danger" id="pDelete" type="button">Delete button</button><button class="btn primary" data-close="padScrim" type="button">Done</button></footer>
+  </div>
+</div>
+
+<!-- Logo picker -->
+<div class="scrim" id="logoPickScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="logoPickTitle">
+    <header><h2 id="logoPickTitle">Add a logo</h2><button class="x" data-close="logoPickScrim" aria-label="Close">×</button></header>
+    <div class="body">
+      <div class="logo-tiles" id="logoTiles"></div>
+      <input type="file" id="logoFile" accept="image/*" hidden>
+    </div>
+  </div>
+</div>
+
+<!-- Logo editor -->
+<div class="scrim" id="logoScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="logoTitle">
+    <header><h2 id="logoTitle">Logo</h2><button class="x" data-close="logoScrim" aria-label="Close">×</button></header>
+    <div class="body">
+      <div class="field"><label for="lSize">Size <span id="lSizeVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="lSize" min="3" max="80" step="0.5"></div>
+      <div class="field"><label for="lOpacity">Opacity <span id="lOpacityVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="lOpacity" min="10" max="100" step="1"></div>
+      <div class="row"><button class="btn" id="lCenter" type="button">Centre horizontally</button></div>
+    </div>
+    <footer style="justify-content:space-between"><button class="btn danger" id="lDelete" type="button">Delete logo</button><button class="btn primary" data-close="logoScrim" type="button">Done</button></footer>
+  </div>
+</div>
+
+<!-- Background editor -->
+<div class="scrim" id="bgScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="bgTitle">
+    <header><h2 id="bgTitle">Background</h2><button class="x" data-close="bgScrim" aria-label="Close">×</button></header>
+    <div class="body">
+      <div class="field"><span class="lbl">Type</span>
+        <div class="seg" id="bgTypeSeg"><button type="button" data-v="gradient">Gradient</button><button type="button" data-v="solid">Solid colour</button><button type="button" data-v="media">Image / video</button></div></div>
+      <div class="field" id="bgColorField"><span class="lbl">Colour</span><div class="row"><input type="color" id="bgColor"><span id="bgColorHex" style="font-family:var(--mono);font-size:13px;color:var(--ink-dim)"></span></div></div>
+      <div class="field" id="bgMediaField">
+        <span class="lbl">Image or video</span>
+        <div class="filebox" id="bgDrop">
+          <div class="meta"><div class="fname" id="bgFname">None</div><div class="fsub">JPG, PNG, MP4… drop a file here</div></div>
+          <button class="btn" id="bgChoose" type="button">Choose…</button>
+        </div>
+        <button class="btn ghost" id="bgBrand" type="button" style="align-self:flex-start">Use the Ghaf Woods × Maravelle background</button>
+        <input type="file" id="bgFile" accept="image/*,video/*" hidden>
+        <div class="row"><span class="lbl" style="margin-right:4px">Fit</span><div class="seg" id="bgFitSeg"><button type="button" data-v="cover">Fill</button><button type="button" data-v="contain">Fit</button></div></div>
+      </div>
+      <div class="field"><label for="bgDim">Darken <span id="bgDimVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="bgDim" min="0" max="90" step="1"></div>
+    </div>
+    <footer><button class="btn primary" data-close="bgScrim" type="button">Done</button></footer>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="scrim" id="setScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <header><h2 id="setTitle">Settings</h2><button class="x" data-close="setScrim" aria-label="Close">×</button></header>
+    <div class="body">
+      <div class="field"><label for="sTitle">Title shown above buttons (optional)</label><input type="text" id="sTitle" maxlength="80" placeholder="Leave blank for none"></div>
+      <label class="toggle"><span>One track at a time<small>Starting a track stops the others</small></span><span class="switch"><input type="checkbox" id="sExclusive"><span></span></span></label>
+      <div class="field"><label for="sSize">Button size <span id="sSizeVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="sSize" min="50" max="200" step="5"></div>
+      <div class="row"><button class="btn" id="sTidy" type="button">Line buttons up in rows</button><span style="font-size:12px;color:var(--ink-faint)">Resets positions</span></div>
+      <div class="field"><label for="sFade">Fade out on stop <span id="sFadeVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="sFade" min="0" max="5000" step="100"></div>
+      <div class="divider"></div>
+      <div class="field"><span class="lbl">Change edit code</span>
+        <input type="password" id="sCode1" inputmode="numeric" maxlength="8" placeholder="New code (4–8 digits)" autocomplete="new-password">
+        <input type="password" id="sCode2" inputmode="numeric" maxlength="8" placeholder="Repeat new code" autocomplete="new-password">
+        <div class="row"><button class="btn" id="sCodeSave" type="button">Update code</button><span class="err" id="sCodeErr"></span></div>
+      </div>
+      <div class="divider"></div>
+      <div class="field"><span class="lbl">All iPads</span>
+        <div id="sSyncText" style="font-size:14px;color:var(--ink-dim)"></div>
+        <div style="font-size:12.5px;color:var(--ink-faint)">Changes stay on this device until you press <b>Publish to all iPads</b>. The iPads pick up a published change within about a minute, as soon as nothing is playing on them.</div>
+        <div class="row"><button class="btn" id="sDiscard" type="button">Discard unpublished changes</button></div>
+      </div>
+      <div class="divider"></div>
+      <div class="field"><span class="lbl">Publishing key (this device only)</span>
+        <div style="font-size:12.5px;color:var(--ink-faint)">Only the device you publish from needs this. It's kept on this device and never put in the page.</div>
+        <input type="password" id="sToken" placeholder="Paste your GitHub access key" autocomplete="off" spellcheck="false">
+        <div class="row"><button class="btn" id="sTokenSave" type="button">Save key</button><button class="btn ghost" id="sTokenForget" type="button">Forget key</button><span class="err" id="sTokenMsg"></span></div>
+      </div>
+      <div class="divider"></div>
+      <div class="row" style="justify-content:space-between"><span style="font-size:13px;color:var(--ink-faint)">Keys: 1–9 play buttons · Esc stops everything</span>
+        <button class="btn danger" id="sReset" type="button">Reset everything</button></div>
+    </div>
+    <footer><button class="btn primary" data-close="setScrim" type="button">Done</button></footer>
+  </div>
+</div>
+
+<!-- Leaving edit mode with unpublished changes -->
+<div class="scrim" id="pubScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pubTitle" style="width:min(400px,100%)">
+    <header><h2 id="pubTitle">Publish your changes?</h2></header>
+    <div class="body"><div style="color:var(--ink-dim);font-size:14px">You have changes that aren’t on the other iPads yet.</div></div>
+    <footer style="flex-wrap:wrap"><button class="btn ghost" id="pubKeep" type="button">Keep editing</button><button class="btn danger" id="pubDiscard" type="button">Discard changes</button><button class="btn primary" id="pubNow" type="button">Publish now</button></footer>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="scrim" id="confScrim">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="confTitle" style="width:min(380px,100%)">
+    <header><h2 id="confTitle">Are you sure?</h2></header>
+    <div class="body"><div id="confMsg" style="color:var(--ink-dim);font-size:14px"></div></div>
+    <footer><button class="btn ghost" id="confNo" type="button">Cancel</button><button class="btn danger" id="confYes" type="button" style="background:rgba(255,90,95,.12)">Confirm</button></footer>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+  const COLORS = ['#2f7d4a','#ebb08c','#16391d','#f3ece2','#1f1f1f','#b5835a','#3b82f6','#ef4444'];
+  const BUTTON_DEFAULT = '#2f7d4a';
+  const BUILTIN = {
+    'ghaf':      {name:'Ghaf Woods (white)', src:'assets/ghaf.webp'},
+    'mar-rose':  {name:'Maravelle (rose gold)', src:'assets/mar-rose.webp'},
+    'mar-white': {name:'Maravelle (white)', src:'assets/mar-white.webp'}
+  };
+  const BUILTIN_BG = {name:'Ghaf Woods × Maravelle', src:'assets/bg.webp'};
+  const REPO = {owner:'kearnsy1234', repo:'maravelle-show', branch:'main'};
+  const APP_BUILD = 1794147290;
+  const POLL_MS = 30000;
+  const DATA_VERSION = 6;
+  const DEFAULT_CODE = '1234';
+  const MAX_BUTTONS = 40;
+  const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const $ = s => document.querySelector(s);
+  const el = (t, cls, html) => { const e=document.createElement(t); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; };
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+  const newButton = (n, x, y) => ({id:uid(), label:'Track '+n, color:BUTTON_DEFAULT, volume:100, loop:false, tap:'stop', media:null, x, y});
+  function rowPositions(count){
+    const portrait = true;   // the stage is always iPad-portrait shaped
+    const maxPer = portrait ? 2 : 6;
+    const perRow = count<=maxPer ? count : Math.ceil(count/Math.ceil(count/maxPer));
+    const rows = Math.ceil(count/perRow), out=[];
+    const xStep = portrait ? 34 : 17, yStep = portrait ? 17 : 26;
+    const yMid = portrait ? clamp(66, 50 + (rows-1)*yStep/2, 90 - (rows-1)*yStep/2) : 64;
+    for(let i=0;i<count;i++){
+      const r=Math.floor(i/perRow), inRow=Math.min(perRow, count-r*perRow), c=i-r*perRow;
+      const x = 50 + (c-(inRow-1)/2)*xStep;
+      const y = rows===1 ? yMid : yMid + (r-(rows-1)/2)*yStep;
+      out.push({x:+clamp(x,8,92).toFixed(2), y:+clamp(y,8,94).toFixed(2)});
+    }
+    return out;
+  }
+  const defaultBg = () => ({type:'media', color:'#16391d', media:'builtin', mediaName:BUILTIN_BG.name, ref:null, fit:'contain', dim:0});
+  const defaults = () => {
+    const pos=rowPositions(5);
+    return { layers:[], code:DEFAULT_CODE, title:'', exclusive:true, fadeMs:800, size:100, bg:defaultBg(), buttons:pos.map((p,i)=>newButton(i+1,p.x,p.y)) };
+  };
+  function normalize(src){
+    const d=defaults(); if(!src || !Array.isArray(src.buttons)) return d;
+    const c=Object.assign(d, clone(src));
+    c.bg=Object.assign(defaultBg(), src.bg||{});
+    const pos=rowPositions(src.buttons.length||1);
+    c.buttons=src.buttons.map((b,i)=>Object.assign(newButton(i+1,(pos[i]||pos[0]).x,(pos[i]||pos[0]).y), b, {id:String(b.id||uid())}));
+    c.buttons.forEach(b=>{ if(b.media && typeof b.media!=='object') b.media=null; });
+    c.layers=Array.isArray(src.layers)? src.layers.filter(l=>l && l.id && (String(l.src).startsWith('builtin:') || l.ref)).map(l=>Object.assign({x:50,y:30,w:16,opacity:100},l)) : [];
+    if(!/^\d{4,8}$/.test(String(c.code))) c.code=DEFAULT_CODE;
+    delete c.showStopAll; delete c.v;
+    return c;
+  }
+  const allRefs = c => [...c.buttons.map(b=>b.media), c.bg.ref, ...c.layers.map(l=>l.ref)].filter(Boolean);
+
+  /* ---------------- Published show (show.json in the repo) ---------------- */
+  let PUB = {v:DATA_VERSION, rev:'none', cfg:null};
+  async function fetchShow(){
+    const r=await fetch('show.json?t='+Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(!d || typeof d!=='object' || !d.cfg) throw new Error('bad show.json');
+    return d;
+  }
+
+  /* ---------------- Local storage on this device (drafts while editing) ---------------- */
+  const mem = new Map(); let idb = null;
+  function openDB(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open('show-player',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); }
+  function tx(mode, fn){ return new Promise((res,rej)=>{ try{ const t=idb.transaction('kv',mode); const r=fn(t.objectStore('kv')); t.oncomplete=()=>res(r && r.result); t.onerror=()=>rej(t.error); t.onabort=()=>rej(t.error); }catch(e){ rej(e); } }); }
+  async function sGet(k){ if(idb){ try{ const v=await tx('readonly', s=>s.get(k)); if(v!==undefined) return v; }catch(e){} } return mem.get(k); }
+  async function sSet(k,v){ mem.set(k,v); if(idb){ try{ await tx('readwrite', s=>s.put(v,k)); }catch(e){} } }
+  async function sDel(k){ mem.delete(k); if(idb){ try{ await tx('readwrite', s=>s.delete(k)); }catch(e){} } }
+
+  /* ---------------- Media ---------------- */
+  // Published files live in the repo's media/ folder; each device keeps its own copy for offline use.
+  const blobs = new Map();
+  function blobToBase64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>{ const s=String(r.result); res(s.slice(s.indexOf(',')+1)); }; r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
+  const safePath = p => typeof p==='string' && /^media\/[A-Za-z0-9._-]{1,120}$/.test(p);
+  async function getMedia(ref){
+    if(!ref || !ref.key) return null;
+    if(blobs.has(ref.key)) return blobs.get(ref.key);
+    let blob=await sGet(ref.key) || null;
+    if(!blob && safePath(ref.path)){
+      try{ const r=await fetch(ref.path); if(r.ok){ const b=await r.blob(); if(b.size>0){ blob=new Blob([b],{type:ref.type||b.type||''}); sSet(ref.key, blob); } } }catch(e){}
+    }
+    if(blob) blobs.set(ref.key, blob);
+    return blob;
+  }
+  function guessType(n){ const e=(n.split('.').pop()||'').toLowerCase(); return ({mp3:'audio/mpeg',wav:'audio/wav',m4a:'audio/mp4',aac:'audio/aac',ogg:'audio/ogg',oga:'audio/ogg',flac:'audio/flac',opus:'audio/ogg',webm:'audio/webm'})[e]||'audio/mpeg'; }
+  function extFor(ref){ const m=/\.([A-Za-z0-9]{1,5})$/.exec(ref.name||''); if(m) return m[1].toLowerCase(); return ({'audio/mpeg':'mp3','audio/wav':'wav','audio/mp4':'m4a','image/png':'png','image/jpeg':'jpg','image/webp':'webp','video/mp4':'mp4'})[ref.type]||'bin'; }
+  async function putMedia(file){
+    const blob=new Blob([await file.arrayBuffer()],{type:file.type||guessType(file.name)});
+    const ref={key:'m-'+uid(), type:blob.type, name:file.name, size:blob.size};
+    blobs.set(ref.key, blob); await sSet(ref.key, blob); return ref;
+  }
+
+  /* ---------------- Edits & publishing ---------------- */
+  let cfg = normalize(null);
+  let dirty=false, draftTimer=null, publishing=false;
+  function save(){ dirty=true; updatePill(); clearTimeout(draftTimer); draftTimer=setTimeout(()=>sSet('draft',{baseRev:PUB.rev, at:Date.now(), cfg:clone(cfg)}), 300); }
+  function needsPublish(){ return dirty || allRefs(cfg).some(r=>!r.path); }
+  function updatePill(state){
+    const pill=$('#syncPill'); if(!pill) return;
+    const [tone,text] = state==='busy' ? ['busy','Publishing…'] : needsPublish() ? ['warn','Not published yet'] : ['ok','Published to all iPads'];
+    pill.className='sync '+tone; pill.querySelector('span').textContent=text;
+    const s=$('#sSyncText'); if(s) s.textContent = text+'.';
+    $('#tbPublish').classList.toggle('primary', needsPublish());
+  }
+  function getToken(){ try{ return localStorage.getItem('sp-gh-token')||''; }catch(e){ return ''; } }
+  async function gh(path, opts={}){
+    const r=await fetch('https://api.github.com/repos/'+REPO.owner+'/'+REPO.repo+path, Object.assign({}, opts, {
+      headers: Object.assign({'Accept':'application/vnd.github+json','Authorization':'Bearer '+getToken(),'X-GitHub-Api-Version':'2022-11-28'}, opts.body? {'Content-Type':'application/json'}:{}),
+    }));
+    if(!r.ok){ const err=new Error('GitHub '+r.status); err.status=r.status; throw err; }
+    return r.status===204 ? null : r.json();
+  }
+  async function publish(){
+    if(publishing) return;
+    if(!getToken()){ toast('Add your GitHub publishing key in Settings first'); fillSettings(); openModal('setScrim'); return; }
+    publishing=true; updatePill('busy');
+    clearTimeout(draftTimer); await sSet('draft',{baseRev:PUB.rev, at:Date.now(), cfg:clone(cfg)});
+    try{
+      const ref=await gh('/git/ref/heads/'+REPO.branch);
+      const head=ref.object.sha;
+      const commit=await gh('/git/commits/'+head);
+      const next=clone(cfg), tree=[];
+      for(const r of allRefs(next)){
+        if(r.path) continue;
+        const blob=await getMedia(r);
+        if(!blob) throw {code:'missing', name:r.name};
+        const b=await gh('/git/blobs',{method:'POST', body:JSON.stringify({content:await blobToBase64(blob), encoding:'base64'})});
+        r.path='media/'+r.key+'.'+extFor(r);
+        tree.push({path:r.path, mode:'100644', type:'blob', sha:b.sha});
+      }
+      const keep=new Set(allRefs(next).map(r=>r.path));
+      for(const r of (PUB.cfg? allRefs(normalize(PUB.cfg)) : [])) if(r.path && !keep.has(r.path) && safePath(r.path)) tree.push({path:r.path, mode:'100644', type:'blob', sha:null});
+      const rev=uid();
+      const show={v:DATA_VERSION, rev, at:Date.now(), app:APP_BUILD, cfg:next};
+      tree.push({path:'show.json', mode:'100644', type:'blob', content:JSON.stringify(show,null,1)+'\n'});
+      const t=await gh('/git/trees',{method:'POST', body:JSON.stringify({base_tree:commit.tree.sha, tree})});
+      const c=await gh('/git/commits',{method:'POST', body:JSON.stringify({message:'Update show from Show Player', tree:t.sha, parents:[head]})});
+      await gh('/git/refs/heads/'+REPO.branch,{method:'PATCH', body:JSON.stringify({sha:c.sha})});
+      for(const r of allRefs(next)){ const b=blobs.get(r.key); if(b) sSet(r.key,b); }
+      PUB=show; cfg=normalize(next); dirty=false; await sDel('draft');
+      try{ localStorage.setItem('sp-show', JSON.stringify(PUB)); }catch(e){}
+      toast('Published — the iPads update within about a minute');
+    }catch(e){
+      const st=e && e.status;
+      toast( e && e.code==='missing' ? 'Can’t find the file for “'+(e.name||'a track')+'” — add it again, then publish'
+           : st===401 ? 'The publishing key isn’t valid — check it in Settings'
+           : st===403 || st===404 ? 'The key can’t write to the maravelle-show repo — check its permissions'
+           : st===409 || st===422 ? 'Someone published at the same time — reload and try again'
+           : 'Couldn’t publish — check the connection and try again');
+    }finally{ publishing=false; updatePill(); }
+  }
+  async function discardDraft(){
+    await sDel('draft'); dirty=false; cfg=normalize(PUB.cfg); rebuildAll(); updatePill();
+  }
+  $('#tbPublish').addEventListener('click',publish);
+
+  /* Pick up a newly published show on the iPads, but never while something is playing. */
+  let pendingShow=null;
+  const anyPlaying = () => [...players.values()].some(p=>p.playing);
+  function applyShow(d){
+    PUB=d; try{ localStorage.setItem('sp-show', JSON.stringify(d)); }catch(e){}
+    if(mode==='edit' && dirty) return;          // don't overwrite someone's unpublished edits
+    cfg=normalize(d.cfg); rebuildAll(); updatePill();
+  }
+  function tryApplyPending(){
+    if(!pendingShow || anyPlaying() || isOpen('codeScrim')) return;
+    const d=pendingShow; pendingShow=null;
+    if(+d.app>APP_BUILD){
+      let last=0; try{ last=+sessionStorage.getItem('sp-reloaded')||0; }catch(e){}
+      if(Date.now()-last>5*60*1000){ try{ sessionStorage.setItem('sp-reloaded', String(Date.now())); }catch(e){} location.reload(); return; }
+    }
+    applyShow(d);
+  }
+  async function poll(){
+    try{ const d=await fetchShow(); if(d.rev!==PUB.rev && (!pendingShow || pendingShow.rev!==d.rev)) pendingShow=d; }catch(e){}
+    tryApplyPending();
+  }
+
+  /* ---------------- Toast & confirm ---------------- */
+  let toastT; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),3200); }
+  function confirmBox(msg){ return new Promise(res=>{ $('#confMsg').textContent=msg; openModal('confScrim');
+    const done=v=>{ closeModal('confScrim'); $('#confYes').onclick=$('#confNo').onclick=null; res(v); };
+    $('#confYes').onclick=()=>done(true); $('#confNo').onclick=()=>done(false); }); }
+
+  /* ---------------- Modals ---------------- */
+  const openStack = [];
+  function openModal(id){ document.getElementById(id).classList.add('open'); if(!openStack.includes(id)) openStack.push(id); }
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); const i=openStack.indexOf(id); if(i>=0) openStack.splice(i,1); }
+  const isOpen = id => openStack.includes(id);
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+  document.querySelectorAll('.scrim').forEach(s=>s.addEventListener('pointerdown',e=>{ if(e.target===s && s.id!=='confScrim' && s.id!=='pubScrim') closeModal(s.id); }));
+
+  /* ---------------- Audio ---------------- */
+  // Plain <audio> playback everywhere — the most reliable path on iPhone/iPad.
+  // (iOS ignores <audio>.volume, so on iPad tracks stop instantly instead of fading.)
+  let wakeLock=null;
+  try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
+  function keepAwake(){
+    if(!wakeLock && navigator.wakeLock){ navigator.wakeLock.request('screen').then(l=>{ wakeLock=l; l.addEventListener('release',()=>{ wakeLock=null; }); }).catch(()=>{}); }
+  }
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) wakeLock=null; });
+
+  const players = new Map(), padEls = new Map();
+  const P = id => { if(!players.has(id)) players.set(id,{audio:null,url:null,duration:0,playing:false,fade:null,key:null,loading:false,missing:false}); return players.get(id); };
+  function fmt(t){ if(!isFinite(t)||t<0) t=0; t=Math.round(t); const m=Math.floor(t/60), s=t%60; return m+':'+String(s).padStart(2,'0'); }
+
+  function setVol(p, v){
+    if(p.audio){ try{ p.audio.volume=v; }catch(e){} }
+  }
+  function unloadPlayer(p){
+    clearFade(p);
+    if(p.audio){ try{ p.audio.pause(); p.audio.removeAttribute('src'); p.audio.load(); }catch(e){} }
+    if(p.url) URL.revokeObjectURL(p.url);
+    Object.assign(p,{audio:null,url:null,duration:0,playing:false});
+  }
+  function loadPlayer(id, blob, key){
+    const p=P(id); unloadPlayer(p); p.key=key||null; p.loading=false; p.missing=false;
+    if(!blob){ renderPad(id); return; }
+    p.url=URL.createObjectURL(blob);
+    const a=new Audio(); a.preload='auto'; a.playsInline=true; a.src=p.url;
+    a.addEventListener('loadedmetadata',()=>{ p.duration=a.duration; if(currentId===id) fillPadEditor(); });
+    a.addEventListener('ended',()=>{ if(!a.loop){ p.playing=false; renderPad(id); if(currentId===id) fillPadEditor(); setTimeout(tryApplyPending,300); } });
+    a.addEventListener('error',()=>{ if(p.audio!==a) return; const b=btnById(id); toast('Couldn’t play “'+(b?b.label:'track')+'” — try an MP3 or M4A file'); });
+    p.audio=a; renderPad(id);
+  }
+  async function loadButtonMedia(b){
+    const p=P(b.id), ref=b.media;
+    if(!ref){ if(p.key||p.audio) loadPlayer(b.id,null,null); return; }
+    if(p.key===ref.key && (p.audio||p.loading)) return;
+    unloadPlayer(p); p.key=ref.key; p.loading=true; p.missing=false; renderPad(b.id);
+    const blob=await getMedia(ref);
+    if(p.key!==ref.key) return;
+    if(blob) loadPlayer(b.id, blob, ref.key);
+    else { p.loading=false; p.missing=true; renderPad(b.id); }
+  }
+  function dropPlayer(id){ const p=players.get(id); if(!p) return; unloadPlayer(p); players.delete(id); }
+  function clearFade(p){ if(p.fade){ clearInterval(p.fade); clearTimeout(p.fade); p.fade=null; } }
+  function hardStop(id){ const p=P(id); clearFade(p); if(p.audio){ try{ p.audio.pause(); p.audio.currentTime=0; }catch(e){} } p.playing=false; renderPad(id); }
+  function stop(id){
+    const p=P(id); if(!p.audio || !p.playing) return;
+    const ms=cfg.fadeMs;
+    if(!ms || IS_IOS){ hardStop(id); return; }
+    clearFade(p); p.playing=false; renderPad(id);
+    const a=p.audio, done=()=>{ clearFade(p); if(p.playing) return; try{ a.pause(); a.currentTime=0; }catch(e){} };
+    { const start=a.volume, t0=performance.now(); p.fade=setInterval(()=>{ const k=Math.min(1,(performance.now()-t0)/ms); try{ a.volume=Math.max(0,start*(1-k)); }catch(e){} if(k>=1) done(); },30); }
+  }
+  function stopAll(){ cfg.buttons.forEach(b=>stop(b.id)); setTimeout(tryApplyPending, (cfg.fadeMs||0)+300); }
+  function play(id){
+    const p=P(id), b=btnById(id); if(!b) return;
+    if(!p.audio){ toast(p.loading ? 'Track is still loading…' : 'No track on this button'); return; }
+    if(p.playing && b.tap==='stop'){ stop(id); return; }
+    if(cfg.exclusive) cfg.buttons.forEach(o=>{ if(o.id!==id) stop(o.id); });
+    clearFade(p); keepAwake();
+    const a=p.audio; a.loop=!!b.loop; setVol(p, clamp(b.volume,0,100)/100);
+    try{ a.currentTime=0; }catch(e){}
+    p.playing=true; renderPad(id);
+    const pr=a.play();   // called synchronously inside the tap so the browser allows it
+    if(pr && pr.catch) pr.catch(err=>{ p.playing=false; renderPad(id); const n=err&&err.name; toast(n==='NotAllowedError' ? 'The browser blocked playback — tap again' : n==='AbortError' ? 'Tap again to play' : 'This track couldn’t play on this device ('+(n||'error')+')'); });
+  }
+
+  /* ---------------- Buttons ---------------- */
+  const btnById = id => cfg.buttons.find(b=>b.id===id);
+  const idxOf = id => cfg.buttons.findIndex(b=>b.id===id);
+  let suppressClick=null;
+  function textColor(hex){ const m=/^#?([0-9a-f]{6})$/i.exec(hex||''); if(!m) return '#fff'; const n=parseInt(m[1],16), r=(n>>16)&255, g=(n>>8)&255, b=n&255; return (0.299*r+0.587*g+0.114*b)>165 ? '#1b1b1b' : '#ffffff'; }
+  function buildPads(){
+    const wrap=$('#pads'); wrap.innerHTML=''; padEls.clear();
+    cfg.buttons.forEach(b=>{
+      const id=b.id;
+      const pad=el('div','pad'); pad.tabIndex=0; pad.setAttribute('role','button');
+      const label=el('span','label'); pad.appendChild(label);
+      pad.addEventListener('click',()=>{ if(suppressClick===id){ suppressClick=null; return; } if(mode==='edit') openPadEditor(id); else play(id); });
+      pad.addEventListener('keydown',e=>{ if(e.target!==pad) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); mode==='edit' ? openPadEditor(id) : play(id);} });
+      pad.addEventListener('pointerdown',e=>startDrag(e,btnById(id),pad,()=>placePad(id)));
+      wrap.appendChild(pad);
+      padEls.set(id,{pad,label});
+      placePad(id);
+    });
+    renderAll();
+  }
+  function placePad(id){ const r=padEls.get(id), b=btnById(id); if(!r||!b) return; r.pad.style.left=b.x+'%'; r.pad.style.top=b.y+'%'; }
+  function renderPad(id){
+    const r=padEls.get(id), b=btnById(id); if(!r||!b) return; const p=P(id), i=idxOf(id);
+    const c=/^#[0-9a-f]{6}$/i.test(b.color)? b.color : BUTTON_DEFAULT;
+    r.pad.style.setProperty('--c', c); r.pad.style.setProperty('--tc', textColor(c));
+    r.label.textContent=b.label || ('Track '+(i+1));
+    r.pad.classList.toggle('empty', !p.audio);
+    r.pad.classList.toggle('playing', p.playing);
+    r.pad.setAttribute('aria-label', (b.label||'Track '+(i+1)) + (p.playing?' (playing)':''));
+  }
+  function renderAll(){
+    cfg.buttons.forEach(b=>renderPad(b.id));
+    $('#showTitle').textContent=cfg.title||'';
+    $('#pads').style.setProperty('--scale', (clamp(+cfg.size||100,50,200)/100).toFixed(2));
+  }
+  function rebuildAll(){
+    const ids=new Set(cfg.buttons.map(b=>b.id)); for(const id of [...players.keys()]) if(!ids.has(id)) dropPlayer(id);
+    buildPads(); buildLayers(); applyBg(); cfg.buttons.forEach(b=>loadButtonMedia(b));
+  }
+
+  /* ---------------- Dragging (edit mode) ---------------- */
+  function startDrag(e, item, node, place){
+    if(mode!=='edit' || !item || (e.pointerType==='mouse' && e.button!==0)) return;
+    e.preventDefault();
+    const id=item.id, layer=$('#stage').getBoundingClientRect(), pr=node.getBoundingClientRect();
+    const sx=e.clientX, sy=e.clientY, bx=item.x, by=item.y;
+    const hx=Math.min(50,(pr.width/2)/layer.width*100), hy=Math.min(50,(pr.height/2)/layer.height*100);
+    let moved=false;
+    try{ node.setPointerCapture(e.pointerId); }catch(_){}
+    const move=ev=>{
+      const dx=ev.clientX-sx, dy=ev.clientY-sy;
+      if(!moved && Math.hypot(dx,dy)<6) return;
+      if(!moved){ moved=true; node.classList.add('dragging'); }
+      let nx=clamp(bx+dx/layer.width*100, hx, 100-hx), ny=clamp(by+dy/layer.height*100, hy, 100-hy);
+      const snapX=Math.abs(nx-50)<1.2, snapY=Math.abs(ny-50)<1.2;
+      if(snapX) nx=50; if(snapY) ny=50;
+      $('#guideV').classList.toggle('on',snapX); $('#guideH').classList.toggle('on',snapY);
+      item.x=+nx.toFixed(2); item.y=+ny.toFixed(2); place();
+    };
+    const up=()=>{
+      node.removeEventListener('pointermove',move); node.removeEventListener('pointerup',up); node.removeEventListener('pointercancel',up);
+      $('#guideV').classList.remove('on'); $('#guideH').classList.remove('on');
+      if(moved){ node.classList.remove('dragging'); suppressClick=id; setTimeout(()=>{ if(suppressClick===id) suppressClick=null; },0); save(); }
+    };
+    node.addEventListener('pointermove',move); node.addEventListener('pointerup',up); node.addEventListener('pointercancel',up);
+  }
+
+  /* ---------------- Logos ---------------- */
+  const layerEls = new Map(), layerUrls = new Map();
+  let currentLayer=null, layerBuild=0;
+  const layerById = id => cfg.layers.find(l=>l.id===id);
+  async function layerSrc(l){
+    if(String(l.src).startsWith('builtin:')){ const b=BUILTIN[l.src.slice(8)]; return b? b.src : ''; }
+    if(!l.ref) return '';
+    if(layerUrls.has(l.ref.key)) return layerUrls.get(l.ref.key);
+    const blob=await getMedia(l.ref); if(!blob) return '';
+    const u=URL.createObjectURL(blob); layerUrls.set(l.ref.key,u); return u;
+  }
+  function placeLayer(id){ const n=layerEls.get(id), l=layerById(id); if(!n||!l) return; n.style.left=l.x+'%'; n.style.top=l.y+'%'; n.style.width=l.w+'%'; n.style.opacity=(l.opacity/100).toFixed(2); }
+  async function buildLayers(){
+    const my=++layerBuild, wrap=$('#layers'), imgs=[];
+    for(const l of cfg.layers){
+      const img=new Image(); img.className='layer'; img.alt=''; img.draggable=false;
+      img.src=await layerSrc(l); if(my!==layerBuild) return;
+      img.addEventListener('pointerdown',e=>startDrag(e,layerById(l.id),img,()=>placeLayer(l.id)));
+      img.addEventListener('click',()=>{ if(suppressClick===l.id){ suppressClick=null; return; } if(mode==='edit') openLayerEditor(l.id); });
+      imgs.push([l.id,img]);
+    }
+    wrap.innerHTML=''; layerEls.clear();
+    imgs.forEach(([id,img])=>{ wrap.appendChild(img); layerEls.set(id,img); placeLayer(id); });
+  }
+  function openLayerEditor(id){ currentLayer=id; const l=layerById(id); if(!l) return;
+    $('#logoTitle').textContent = String(l.src).startsWith('builtin:') ? (BUILTIN[l.src.slice(8)]||{name:'Logo'}).name : 'Logo';
+    $('#lSize').value=l.w; $('#lSizeVal').textContent=l.w+'% of width'; $('#lOpacity').value=l.opacity; $('#lOpacityVal').textContent=l.opacity+'%';
+    openModal('logoScrim'); }
+  $('#lSize').addEventListener('input',e=>{ const l=layerById(currentLayer); if(!l) return; l.w=+e.target.value; $('#lSizeVal').textContent=l.w+'% of width'; placeLayer(l.id); save(); });
+  $('#lOpacity').addEventListener('input',e=>{ const l=layerById(currentLayer); if(!l) return; l.opacity=+e.target.value; $('#lOpacityVal').textContent=l.opacity+'%'; placeLayer(l.id); save(); });
+  $('#lCenter').addEventListener('click',()=>{ const l=layerById(currentLayer); if(!l) return; l.x=50; placeLayer(l.id); save(); });
+  $('#lDelete').addEventListener('click',async()=>{ const id=currentLayer; if(!layerById(id)) return; if(!(await confirmBox('Delete this logo from the screen?'))) return;
+    cfg.layers=cfg.layers.filter(x=>x.id!==id); save(); closeModal('logoScrim'); buildLayers(); });
+  function addLayer(src, ref){ const l={id:uid(), src, ref:ref||null, x:50, y:30, w:16, opacity:100}; cfg.layers.push(l); save(); return l; }
+  (function buildLogoTiles(){ const t=$('#logoTiles');
+    Object.entries(BUILTIN).forEach(([k,b])=>{ const d=el('button','logo-tile'); d.type='button'; d.title=b.name; d.innerHTML=`<img alt="${b.name}" src="${b.src}">`;
+      d.addEventListener('click',async()=>{ const l=addLayer('builtin:'+k); closeModal('logoPickScrim'); await buildLayers(); openLayerEditor(l.id); }); t.appendChild(d); });
+    const up=el('button','logo-tile upload','<span style="font-size:22px">＋</span>Upload an image'); up.type='button'; up.addEventListener('click',()=>$('#logoFile').click()); t.appendChild(up);
+  })();
+  $('#logoFile').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    if(!f.type.startsWith('image/')){ toast('Use an image file (PNG with transparency works best)'); return; }
+    const ref=await putMedia(f); const l=addLayer('media', ref);
+    closeModal('logoPickScrim'); await buildLayers(); openLayerEditor(l.id); });
+  $('#tbLogo').addEventListener('click',()=>openModal('logoPickScrim'));
+
+  /* ---------------- Add / delete buttons ---------------- */
+  function addButton(){
+    if(cfg.buttons.length>=MAX_BUTTONS){ toast('That’s the maximum number of buttons'); return; }
+    let x=50, y=50; const taken=(x,y)=>cfg.buttons.some(b=>Math.abs(b.x-x)<6 && Math.abs(b.y-y)<6);
+    for(let k=0;k<12 && taken(x,y);k++){ x=clamp(50+(k+1)*4,10,90); y=clamp(50+(k+1)*4,12,88); }
+    const b=newButton(cfg.buttons.length+1, x, y);
+    cfg.buttons.push(b); save(); buildPads(); openPadEditor(b.id);
+  }
+  async function deleteButton(id){
+    const b=btnById(id); if(!b) return;
+    if(!(await confirmBox('Delete “'+(b.label||'this button')+'” and its track?'))) return;
+    dropPlayer(id); cfg.buttons=cfg.buttons.filter(x=>x.id!==id); save();
+    closeModal('padScrim'); currentId=null; buildPads(); toast('Button deleted');
+  }
+  $('#tbAdd').addEventListener('click',addButton);
+
+  /* ---------------- Background ---------------- */
+  let bgUrl=null, bgKey=null, bgBuild=0;
+  async function applyBg(){
+    const my=++bgBuild, bg=$('#bg'), b=cfg.bg;
+    let url=null;
+    if(b.type==='media' && b.media!=='builtin' && b.ref){
+      if(bgKey===b.ref.key && bgUrl) url=bgUrl;
+      else { const blob=await getMedia(b.ref); if(my!==bgBuild) return; if(blob){ if(bgUrl) URL.revokeObjectURL(bgUrl); bgUrl=url=URL.createObjectURL(blob); bgKey=b.ref.key; } }
+    }
+    bg.innerHTML=''; bg.style.backgroundImage=''; bg.classList.toggle('contain', b.fit==='contain');
+    bg.style.backgroundSize = b.fit==='contain' ? 'contain' : 'cover';
+    bg.style.backgroundColor = /^#[0-9a-f]{3,8}$/i.test(b.color)? b.color : '#16391d';
+    $('#dim').style.opacity = (clamp(+b.dim||0,0,90)/100).toFixed(2);
+    if(b.type==='gradient'){
+      bg.style.backgroundImage = `radial-gradient(ellipse 70% 60% at 22% 18%, ${mix(b.color,'#4c6fff',.38)} 0%, transparent 70%), radial-gradient(ellipse 60% 55% at 82% 88%, ${mix(b.color,'#b04cff',.32)} 0%, transparent 70%)`;
+    } else if(b.type==='media' && b.media==='builtin'){
+      setImageBg(bg, BUILTIN_BG.src, b.fit);
+    } else if(b.type==='media' && url){
+      if(b.media==='video'){ const v=document.createElement('video'); v.src=url; v.muted=true; v.loop=true; v.autoplay=true; v.playsInline=true; bg.appendChild(v); v.play().catch(()=>{}); }
+      else setImageBg(bg, url, b.fit);
+    }
+  }
+  function setImageBg(bg, url, fit){
+    if(fit!=='contain'){ bg.style.backgroundImage=`url("${url}")`; return; }
+    const f=document.createElement('div'); f.className='bg-fill'; f.style.backgroundImage=`url("${url}")`;
+    const i=document.createElement('div'); i.className='bg-img'; i.style.backgroundImage=`url("${url}")`;
+    bg.append(f,i);
+  }
+  function mix(a,b,t){ try{ const pa=hex(a), pb=hex(b); return '#'+pa.map((v,i)=>Math.round(v+(pb[i]-v)*t).toString(16).padStart(2,'0')).join(''); }catch(e){ return b; } }
+  function hex(h){ h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); return [0,2,4].map(i=>parseInt(h.substr(i,2),16)||0); }
+
+  /* ---------------- Modes ---------------- */
+  let mode='show';
+  function setMode(m){
+    mode=m; document.body.classList.toggle('editing', m==='edit');
+    if(m!=='edit') openStack.slice().forEach(closeModal);
+    renderAll(); armCursorHide(); updatePill();
+  }
+  async function enterEdit(){
+    const draft=await sGet('draft');
+    if(draft && draft.baseRev===PUB.rev && draft.cfg){ cfg=normalize(draft.cfg); dirty=true; rebuildAll(); toast('Restored your unpublished changes'); }
+    else if(draft) await sDel('draft');
+    setMode('edit');
+  }
+  function leaveEdit(){
+    if(needsPublish()){ openModal('pubScrim'); return; }
+    setMode('show'); toast('Show mode — triple-tap top-right corner or press E to edit');
+  }
+  $('#tbShow').addEventListener('click',leaveEdit);
+  $('#pubKeep').addEventListener('click',()=>closeModal('pubScrim'));
+  $('#pubNow').addEventListener('click',()=>{ closeModal('pubScrim'); publish(); });
+  $('#pubDiscard').addEventListener('click',async()=>{ closeModal('pubScrim'); await discardDraft(); setMode('show'); });
+  $('#tbFull').addEventListener('click',async()=>{ try{ const d=document.documentElement; if(document.fullscreenElement||document.webkitFullscreenElement) await (document.exitFullscreen||document.webkitExitFullscreen).call(document); else await (d.requestFullscreen||d.webkitRequestFullscreen).call(d); }catch(e){ toast('Fullscreen isn’t allowed here — open the page in its own tab'); } });
+  let taps=[]; $('#hotspot').addEventListener('pointerdown',()=>{ const now=Date.now(); taps=taps.filter(t=>now-t<1200); taps.push(now); if(taps.length>=3){ taps=[]; requestEdit(); } });
+  function requestEdit(){ if(mode==='edit') return; openCodePad(enterEdit); }
+  let curT; function armCursorHide(){ document.body.classList.remove('hide-cursor'); clearTimeout(curT); if(mode==='show') curT=setTimeout(()=>document.body.classList.add('hide-cursor'),2500); }
+  window.addEventListener('pointermove',armCursorHide);
+
+  /* ---------------- Code pad ---------------- */
+  let codeBuf='', codeCb=null, fails=0, lockUntil=0;
+  (function buildKeypad(){ const k=$('#keypad'); ['1','2','3','4','5','6','7','8','9','clr','0','ok'].forEach(v=>{ const b=el('button', v==='ok'?'k-ok':v==='clr'?'k-clr':'', v==='ok'?'Enter':v==='clr'?'Clear':v); b.type='button'; b.addEventListener('click',()=>codeKey(v)); k.appendChild(b); }); })();
+  function drawDots(){ const d=$('#codeDots'); d.innerHTML=''; const n=Math.max(4,codeBuf.length); for(let i=0;i<n;i++) d.appendChild(el('i', i<codeBuf.length?'f':'')); }
+  function openCodePad(cb){ codeBuf=''; codeCb=cb; $('#codeErr').textContent=''; drawDots(); openModal('codeScrim'); }
+  function codeKey(v){
+    if(Date.now()<lockUntil){ $('#codeErr').textContent='Too many attempts — wait '+Math.ceil((lockUntil-Date.now())/1000)+'s'; return; }
+    if(v==='clr') codeBuf='';
+    else if(v==='back') codeBuf=codeBuf.slice(0,-1);
+    else if(v==='ok'){
+      if(codeBuf===String(cfg.code)){ fails=0; closeModal('codeScrim'); const cb=codeCb; codeCb=null; cb && cb(); return; }
+      fails++; codeBuf=''; const s=$('#codeSheet'); s.classList.remove('shake'); void s.offsetWidth; s.classList.add('shake');
+      if(fails>=5){ lockUntil=Date.now()+30000; fails=0; $('#codeErr').textContent='Too many attempts — locked for 30s'; }
+      else $('#codeErr').textContent='Wrong code';
+    }
+    else if(codeBuf.length<8){ codeBuf+=v; $('#codeErr').textContent=''; }
+    drawDots();
+  }
+
+  /* ---------------- Button editor ---------------- */
+  let currentId=null;
+  const cur = () => btnById(currentId);
+  (function buildSwatches(){ const w=$('#pSwatches'); COLORS.forEach(c=>{ const s=el('button','sw'); s.type='button'; s.style.background=c; s.dataset.c=c; s.setAttribute('aria-label','Colour '+c); s.addEventListener('click',()=>{ const b=cur(); if(!b) return; b.color=c; save(); renderPad(currentId); fillPadEditor(); }); w.appendChild(s); }); })();
+  function openPadEditor(id){ currentId=id; fillPadEditor(); openModal('padScrim'); }
+  function fillPadEditor(){
+    const b=cur(); if(!b) return; const p=P(b.id);
+    $('#padTitle').textContent='Button '+(idxOf(b.id)+1);
+    if(document.activeElement!==$('#pLabel')) $('#pLabel').value=b.label;
+    const has=!!b.media;
+    $('#pFname').textContent = has ? (b.media.name||'Audio file') : 'No track loaded';
+    $('#pFsub').textContent = !has ? 'MP3, WAV, M4A… drop a file here' : p.loading ? 'Loading…' : p.missing ? 'File not found — add it again' : (p.duration? 'Length '+fmt(p.duration):'Ready');
+    $('#pChoose').textContent = has ? 'Replace…' : 'Choose…';
+    $('#pRemove').style.display = has ? '' : 'none';
+    $('#pPreview').style.display = p.audio ? '' : 'none';
+    $('#pPreview').textContent = p.playing ? '■ Stop' : '▶ Preview';
+    document.querySelectorAll('#pSwatches .sw').forEach(s=>s.classList.toggle('on', s.dataset.c===b.color));
+    $('#pVol').value=b.volume; $('#pVolVal').textContent=b.volume+'%';
+    $('#pLoop').checked=!!b.loop;
+    document.querySelectorAll('#pTapSeg button').forEach(x=>x.classList.toggle('on', x.dataset.v===b.tap));
+  }
+  $('#pLabel').addEventListener('input',e=>{ const b=cur(); if(!b) return; b.label=e.target.value; save(); renderPad(currentId); });
+  $('#pVol').addEventListener('input',e=>{ const b=cur(); if(!b) return; const v=+e.target.value; b.volume=v; $('#pVolVal').textContent=v+'%'; const p=P(currentId); if(p.audio && p.playing && !p.fade) setVol(p, v/100); save(); });
+  $('#pLoop').addEventListener('change',e=>{ const b=cur(); if(!b) return; b.loop=e.target.checked; const p=P(currentId); if(p.audio) p.audio.loop=e.target.checked; save(); });
+  $('#pTapSeg').addEventListener('click',e=>{ const b=cur(); const v=e.target.dataset&&e.target.dataset.v; if(!v||!b) return; b.tap=v; save(); fillPadEditor(); });
+  $('#pChoose').addEventListener('click',()=>$('#pFile').click());
+  $('#pFile').addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; if(f) setTrack(currentId,f); });
+  $('#pPreview').addEventListener('click',()=>{ const id=currentId; if(P(id).playing) stop(id); else play(id); setTimeout(fillPadEditor,50); });
+  $('#pRemove').addEventListener('click',async()=>{ const id=currentId, b=cur(); if(!b) return; if(!(await confirmBox('Remove the track from “'+b.label+'”? The button stays.'))) return; b.media=null; save(); loadPlayer(id,null,null); fillPadEditor(); });
+  $('#pDelete').addEventListener('click',()=>deleteButton(currentId));
+  dropZone($('#pDrop'), f=>setTrack(currentId,f));
+  async function setTrack(id,f){
+    if(!(f.type.startsWith('audio/') || f.type.startsWith('video/') || /\.(mp3|wav|m4a|aac|ogg|oga|flac|webm|opus)$/i.test(f.name))){ toast('That doesn’t look like an audio file'); return; }
+    const b=btnById(id); if(!b) return;
+    if(f.size>11*1024*1024){ toast('That file is too large to publish — please use a compressed MP3 or M4A under 11 MB'); return; }
+    const ref=await putMedia(f);
+    b.media=ref;
+    if(/^Track \d+$/.test(b.label) || !b.label) b.label=f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' ').replace(/\s+/g,' ').trim().slice(0,60);
+    loadPlayer(id, blobs.get(ref.key), ref.key); fillPadEditor(); renderPad(id);
+    save(); toast('Track loaded — press Publish to send it to the iPads');
+  }
+  function dropZone(node, cb){
+    ['dragenter','dragover'].forEach(ev=>node.addEventListener(ev,e=>{ e.preventDefault(); node.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(ev=>node.addEventListener(ev,e=>{ e.preventDefault(); node.classList.remove('drag'); }));
+    node.addEventListener('drop',e=>{ const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) cb(f); });
+  }
+
+  /* ---------------- Background editor ---------------- */
+  function fillBg(){
+    const b=cfg.bg;
+    document.querySelectorAll('#bgTypeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.v===b.type));
+    document.querySelectorAll('#bgFitSeg button').forEach(x=>x.classList.toggle('on',x.dataset.v===b.fit));
+    $('#bgColorField').style.display = b.type==='media' ? 'none':'';
+    $('#bgMediaField').style.display = b.type==='media' ? '':'none';
+    $('#bgColor').value=/^#[0-9a-f]{6}$/i.test(b.color)? b.color : '#16391d'; $('#bgColorHex').textContent=String(b.color).toUpperCase();
+    $('#bgFname').textContent = b.media ? (b.mediaName||'Background file') : 'None';
+    $('#bgChoose').textContent = b.media ? 'Replace…':'Choose…';
+    $('#bgDim').value=b.dim; $('#bgDimVal').textContent=b.dim+'%';
+  }
+  $('#tbBg').addEventListener('click',()=>{ fillBg(); openModal('bgScrim'); });
+  $('#bgTypeSeg').addEventListener('click',e=>{ const v=e.target.dataset&&e.target.dataset.v; if(!v) return; cfg.bg.type=v; save(); fillBg(); applyBg(); });
+  $('#bgFitSeg').addEventListener('click',e=>{ const v=e.target.dataset&&e.target.dataset.v; if(!v) return; cfg.bg.fit=v; save(); fillBg(); applyBg(); });
+  $('#bgColor').addEventListener('input',e=>{ cfg.bg.color=e.target.value; $('#bgColorHex').textContent=e.target.value.toUpperCase(); save(); applyBg(); });
+  $('#bgDim').addEventListener('input',e=>{ cfg.bg.dim=+e.target.value; $('#bgDimVal').textContent=e.target.value+'%'; $('#dim').style.opacity=(cfg.bg.dim/100).toFixed(2); save(); });
+  $('#bgChoose').addEventListener('click',()=>$('#bgFile').click());
+  $('#bgFile').addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; if(f) setBgMedia(f); });
+  dropZone($('#bgDrop'), setBgMedia);
+  $('#bgBrand').addEventListener('click',()=>{ Object.assign(cfg.bg,{type:'media',media:'builtin',mediaName:BUILTIN_BG.name,ref:null,color:'#16391d',fit:'contain'}); save(); fillBg(); applyBg(); });
+  async function setBgMedia(f){
+    const kind = f.type.startsWith('video/') ? 'video' : f.type.startsWith('image/') ? 'image' : null;
+    if(!kind){ toast('Use an image or video file'); return; }
+    if(f.size>8*1024*1024){ toast('That file is too large — use an image or video under 8 MB'); return; }
+    const ref=await putMedia(f);
+    Object.assign(cfg.bg,{media:kind, mediaName:f.name, ref, type:'media'}); save(); fillBg(); applyBg();
+  }
+
+  /* ---------------- Settings ---------------- */
+  function fillSettings(){
+    $('#sTitle').value=cfg.title; $('#sExclusive').checked=cfg.exclusive;
+    $('#sSize').value=cfg.size; $('#sSizeVal').textContent=cfg.size+'%';
+    $('#sFade').value=cfg.fadeMs; $('#sFadeVal').textContent = cfg.fadeMs? (cfg.fadeMs/1000).toFixed(1)+'s':'off';
+    $('#sCode1').value=$('#sCode2').value='';
+    const def = String(cfg.code)===DEFAULT_CODE; $('#sCodeErr').textContent = def ? 'Default code is 1234 — change it' : ''; $('#sCodeErr').style.color = def ? 'var(--accent)' : '';
+    $('#sToken').value=''; $('#sTokenMsg').style.color=''; $('#sTokenMsg').textContent = getToken() ? 'A key is saved on this device' : 'No key saved on this device';
+    updatePill();
+  }
+  $('#tbSettings').addEventListener('click',()=>{ fillSettings(); openModal('setScrim'); });
+  $('#sTitle').addEventListener('input',e=>{ cfg.title=e.target.value; $('#showTitle').textContent=cfg.title; save(); });
+  $('#sExclusive').addEventListener('change',e=>{ cfg.exclusive=e.target.checked; save(); });
+  $('#sSize').addEventListener('input',e=>{ cfg.size=+e.target.value; $('#sSizeVal').textContent=cfg.size+'%'; renderAll(); save(); });
+  $('#sTidy').addEventListener('click',()=>{ const pos=rowPositions(cfg.buttons.length); cfg.buttons.forEach((b,i)=>{ b.x=pos[i].x; b.y=pos[i].y; placePad(b.id); }); save(); toast('Buttons lined up'); });
+  $('#sFade').addEventListener('input',e=>{ cfg.fadeMs=+e.target.value; $('#sFadeVal').textContent=cfg.fadeMs?(cfg.fadeMs/1000).toFixed(1)+'s':'off'; save(); });
+  ['#sCode1','#sCode2'].forEach(s=>$(s).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,''); }));
+  $('#sCodeSave').addEventListener('click',()=>{
+    const a=$('#sCode1').value, b=$('#sCode2').value, err=$('#sCodeErr'); err.style.color='';
+    if(!/^\d{4,8}$/.test(a)){ err.textContent='Use 4–8 digits'; return; }
+    if(a!==b){ err.textContent='Codes don’t match'; return; }
+    cfg.code=a; save(); $('#sCode1').value=$('#sCode2').value=''; err.style.color='#4ade80'; err.textContent='Code changed — publish to apply it on the iPads';
+  });
+  $('#sTokenSave').addEventListener('click',()=>{ const v=$('#sToken').value.trim(); const m=$('#sTokenMsg');
+    if(!v){ m.style.color=''; m.textContent='Paste the key first'; return; }
+    try{ localStorage.setItem('sp-gh-token', v); m.style.color='#4ade80'; m.textContent='Saved on this device'; $('#sToken').value=''; }catch(e){ m.style.color=''; m.textContent='This browser won’t store it'; } });
+  $('#sTokenForget').addEventListener('click',()=>{ try{ localStorage.removeItem('sp-gh-token'); }catch(e){} const m=$('#sTokenMsg'); m.style.color=''; m.textContent='Key removed from this device'; });
+  $('#sDiscard').addEventListener('click',async()=>{ if(!dirty){ toast('Nothing to discard'); return; } if(!(await confirmBox('Throw away the changes you haven’t published?'))) return; await discardDraft(); fillSettings(); toast('Changes discarded'); });
+  $('#sReset').addEventListener('click',async()=>{
+    if(!(await confirmBox('This clears all buttons and tracks, the background and settings, and puts the code back to 1234. Nothing changes on the iPads until you publish.'))) return;
+    cfg.buttons.forEach(b=>dropPlayer(b.id)); cfg=defaults(); save(); rebuildAll(); fillSettings(); toast('Reset — publish to apply');
+  });
+
+  /* ---------------- Keyboard ---------------- */
+  window.addEventListener('keydown',e=>{
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+    if(isOpen('codeScrim')){
+      if(/^\d$/.test(e.key)){ codeKey(e.key); e.preventDefault(); }
+      else if(e.key==='Backspace'){ codeKey('back'); e.preventDefault(); }
+      else if(e.key==='Enter'){ codeKey('ok'); e.preventDefault(); }
+      else if(e.key==='Escape'){ closeModal('codeScrim'); }
+      return;
+    }
+    if(e.key==='Escape'){ if(openStack.length){ const top=openStack[openStack.length-1]; if(top!=='confScrim' && top!=='pubScrim') closeModal(top); } else stopAll(); return; }
+    if(typing || openStack.length || e.metaKey || e.ctrlKey || e.altKey) return;
+    if(/^[1-9]$/.test(e.key)){ const b=cfg.buttons[+e.key-1]; if(b){ e.preventDefault(); play(b.id); } }
+    else if((e.key==='e'||e.key==='E') && mode==='show'){ e.preventDefault(); requestEdit(); }
+  });
+
+  function sizeStage(){ const s=$('#stage'); s.style.setProperty('--sw', s.getBoundingClientRect().width+'px'); }
+  window.addEventListener('resize', sizeStage); window.addEventListener('orientationchange', ()=>setTimeout(sizeStage,200));
+
+  /* ---------------- Boot ---------------- */
+  (async function boot(){
+    sizeStage();
+    try{ idb = await openDB(); }catch(e){ idb=null; }
+    let d=null;
+    try{ d=await fetchShow(); }catch(e){ try{ d=JSON.parse(localStorage.getItem('sp-show')||'null'); }catch(_){ d=null; } if(d) toast('Offline — showing the last saved setup'); }
+    if(d){ PUB=d; try{ localStorage.setItem('sp-show', JSON.stringify(d)); }catch(e){} cfg=normalize(d.cfg); }
+    buildPads(); buildLayers(); applyBg();
+    await Promise.all(cfg.buttons.map(b=>loadButtonMedia(b)));
+    setMode('show');
+    if(d && +d.app>APP_BUILD) pendingShow=d;   // a newer player was published; load it when idle
+    setInterval(poll, POLL_MS);
+    document.addEventListener('visibilitychange',()=>{ if(!document.hidden) poll(); });
+    if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+  })();
+})();
+
+</script>
+</body>
+</html>
