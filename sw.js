@@ -1,6 +1,6 @@
 // Keeps a copy of the player on each iPad so it still opens and plays without Wi-Fi.
-const CACHE = 'maravelle-show-v1';
-const CORE = ['./', 'index.html', 'manifest.webmanifest', 'assets/bg.webp', 'assets/ghaf.webp', 'assets/mar-rose.webp', 'assets/mar-white.webp', 'assets/icon-192.png'];
+const CACHE = 'maravelle-show-v2';
+const CORE = ['./', 'index.html', 'manifest.webmanifest', 'assets/bg-ghaf.webp', 'assets/ghaf.webp', 'assets/mar-rose.webp', 'assets/mar-white.webp', 'assets/icon-192.png'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
