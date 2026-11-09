@@ -13,13 +13,14 @@
 <link rel="icon" href="assets/icon-192.png">
 <title>Maravelle Show Player</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#f4f6fb; --ink-dim:rgba(244,246,251,.62); --ink-faint:rgba(244,246,251,.38);
     --panel:#11141d; --panel-2:#181c28; --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
     --accent:#ebb08c; --danger:#ff5a5f;
     --font:'Jost',system-ui,-apple-system,Segoe UI,sans-serif;
+    --btn-font:'Cormorant Garamond',Georgia,serif;
     --mono:'Jost',system-ui,sans-serif;
   }
   *{box-sizing:border-box}
@@ -39,8 +40,8 @@
   #dim{position:fixed;inset:0;z-index:1;background:#000;opacity:.3;pointer-events:none}
 
   /* ---------- Stage ---------- */
-  #stage{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:min(100vw,calc(100vh * 0.7496));height:min(100vh,calc(100vw / 0.7496))}
-  @supports (height:100dvh){ #stage{width:min(100vw,calc(100dvh * 0.7496));height:min(100dvh,calc(100vw / 0.7496))} }
+  #stage{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;width:min(100vw,calc(100vh * 0.6949));height:min(100vh,calc(100vw / 0.6949))}
+  @supports (height:100dvh){ #stage{width:min(100vw,calc(100dvh * 0.6949));height:min(100dvh,calc(100vw / 0.6949))} }
   #showTitle{position:absolute;left:50%;top:6%;transform:translateX(-50%);margin:0;width:90%;font-weight:600;letter-spacing:.02em;font-size:clamp(22px,3.6vw,48px);text-align:center;text-shadow:0 2px 24px rgba(0,0,0,.5);pointer-events:none}
   #showTitle:empty{display:none}
   #pads{position:absolute;inset:0;pointer-events:none}
@@ -64,11 +65,17 @@
        background:var(--c);color:var(--tc);border-radius:14%;display:flex;align-items:center;justify-content:center;text-align:center;padding:calc(var(--sw,768px) * .016 * var(--scale,1));box-sizing:border-box;
        cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;transition:transform .1s ease, box-shadow .2s, opacity .2s;
        font-family:var(--font);font-weight:500;font-size:calc(var(--sw,768px) * .0215 * var(--scale,1));line-height:1.2}
-  .pad .label{word-break:break-word;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .pad .label{white-space:pre-line;word-break:break-word;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
   .pad:active{transform:translate(-50%,-50%) scale(.97)}
   .pad:focus-visible{outline:3px solid #fff;outline-offset:3px}
   .pad.playing{box-shadow:inset 0 0 0 6px var(--tc)}
   .pad.empty{opacity:.45}
+  /* Framed style (from the supplied button artwork) */
+  #pads.style-frame .pad{width:calc(var(--sw,768px) * .262 * var(--scale,1));aspect-ratio:860/400;background:url(assets/button-frame.png) center/100% 100% no-repeat;
+       border-radius:3.3% / 7.1%;color:#f6f1e8;font-family:var(--btn-font);font-weight:500;font-size:calc(var(--sw,768px) * .0235 * var(--scale,1));line-height:1.12;
+       padding:calc(var(--sw,768px) * .02 * var(--scale,1));letter-spacing:.005em}
+  #pads.style-frame .pad.playing{background-color:rgba(246,241,232,.10);box-shadow:0 0 0 2px rgba(246,241,232,.85), 0 0 calc(var(--sw,768px) * .03) rgba(246,241,232,.25)}
+  #pads.style-frame .pad.empty{opacity:.45}
   body.editing .pad{cursor:grab;outline:1px dashed rgba(255,255,255,.55);outline-offset:6px}
   body.editing .pad.dragging{cursor:grabbing;transition:none;transform:translate(-50%,-50%) scale(1.04);z-index:5;outline-color:var(--accent)}
 
@@ -109,8 +116,9 @@
   .x:hover{background:var(--panel-2);color:var(--ink)}
   .field{display:flex;flex-direction:column;gap:7px}
   .field > label, .lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
-  input[type=text],input[type=password]{background:#0b0d14;border:1px solid var(--line-2);border-radius:10px;padding:11px 12px;color:var(--ink);font:inherit;font-size:15px;width:100%}
-  input[type=text]:focus,input[type=password]:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+  textarea{resize:none;line-height:1.35}
+  input[type=text],input[type=password],textarea{background:#0b0d14;border:1px solid var(--line-2);border-radius:10px;padding:11px 12px;color:var(--ink);font:inherit;font-size:15px;width:100%}
+  input[type=text]:focus,input[type=password]:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .filebox{border:1px dashed var(--line-2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;background:#0b0d14}
   .filebox .meta{flex:1;min-width:0}
@@ -201,7 +209,8 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="padTitle">
     <header><h2 id="padTitle">Button 1</h2><button class="x" data-close="padScrim" aria-label="Close">×</button></header>
     <div class="body">
-      <div class="field"><label for="pLabel">Button label</label><input type="text" id="pLabel" maxlength="60" placeholder="e.g. Walk-in music"></div>
+      <div class="field"><label for="pLabel">Button label</label><textarea id="pLabel" rows="2" maxlength="80" placeholder="e.g. Walk-in music"></textarea>
+        <small style="color:var(--ink-faint);font-size:12px">Press Return for a second line.</small></div>
       <div class="field">
         <span class="lbl">Audio track</span>
         <div class="filebox" id="pDrop">
@@ -214,7 +223,7 @@
           <button class="btn danger" id="pRemove" type="button">Remove track</button>
         </div>
       </div>
-      <div class="field"><span class="lbl">Colour</span><div class="swatches" id="pSwatches"></div></div>
+      <div class="field" id="pColourField"><span class="lbl">Colour</span><div class="swatches" id="pSwatches"></div></div>
       <div class="field"><label for="pVol">Volume <span id="pVolVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="pVol" min="0" max="100" step="1"></div>
       <label class="toggle"><span>Loop<small>Repeat until stopped</small></span><span class="switch"><input type="checkbox" id="pLoop"><span></span></span></label>
       <div class="toggle" style="cursor:default"><span>When pressed while playing</span>
@@ -262,7 +271,7 @@
           <div class="meta"><div class="fname" id="bgFname">None</div><div class="fsub">JPG, PNG, MP4… drop a file here</div></div>
           <button class="btn" id="bgChoose" type="button">Choose…</button>
         </div>
-        <button class="btn ghost" id="bgBrand" type="button" style="align-self:flex-start">Use the Ghaf Woods forest background</button>
+        <button class="btn ghost" id="bgBrand" type="button" style="align-self:flex-start">Use the Voices of Ghaf background</button>
         <input type="file" id="bgFile" accept="image/*,video/*" hidden>
         <div class="row"><span class="lbl" style="margin-right:4px">Fit</span><div class="seg" id="bgFitSeg"><button type="button" data-v="cover">Fill</button><button type="button" data-v="contain">Fit</button></div></div>
       </div>
@@ -279,6 +288,7 @@
     <div class="body">
       <div class="field"><label for="sTitle">Title shown above buttons (optional)</label><input type="text" id="sTitle" maxlength="80" placeholder="Leave blank for none"></div>
       <label class="toggle"><span>One track at a time<small>Starting a track stops the others</small></span><span class="switch"><input type="checkbox" id="sExclusive"><span></span></span></label>
+      <div class="field"><span class="lbl">Button style</span><div class="seg" id="sStyleSeg"><button type="button" data-v="frame">Framed</button><button type="button" data-v="solid">Solid colour</button></div></div>
       <div class="field"><label for="sSize">Button size <span id="sSizeVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="sSize" min="50" max="200" step="5"></div>
       <div class="row"><button class="btn" id="sTidy" type="button">Line buttons up in rows</button><span style="font-size:12px;color:var(--ink-faint)">Resets positions</span></div>
       <div class="field"><label for="sFade">Fade out on stop <span id="sFadeVal" style="font-family:var(--mono);text-transform:none;letter-spacing:0"></span></label><input type="range" id="sFade" min="0" max="5000" step="100"></div>
@@ -336,11 +346,12 @@
   const BUILTIN = {
     'ghaf':      {name:'Ghaf Woods (white)', src:'assets/ghaf.webp'},
     'mar-rose':  {name:'Maravelle (rose gold)', src:'assets/mar-rose.webp'},
-    'mar-white': {name:'Maravelle (white)', src:'assets/mar-white.webp'}
+    'mar-white': {name:'Maravelle (white)', src:'assets/mar-white.webp'},
+    'voices':    {name:'The Voices of Ghaf (title)', src:'assets/voices.webp'}
   };
-  const BUILTIN_BG = {name:'Ghaf Woods forest', src:'assets/bg-clean.webp'};
+  const BUILTIN_BG = {name:'The Voices of Ghaf', src:'assets/bg-voices.webp'};
   const REPO = {owner:'kearnsy1234', repo:'maravelle-show', branch:'main'};
-  const APP_BUILD = 1794211088;
+  const APP_BUILD = 1794213493;
   const POLL_MS = 30000;
   const DATA_VERSION = 6;
   const DEFAULT_CODE = '1234';
@@ -359,8 +370,8 @@
     const maxPer = portrait ? 2 : 6;
     const perRow = count<=maxPer ? count : Math.ceil(count/Math.ceil(count/maxPer));
     const rows = Math.ceil(count/perRow), out=[];
-    const xStep = portrait ? 34 : 17, yStep = portrait ? 17 : 26;
-    const yMid = portrait ? clamp(66, 50 + (rows-1)*yStep/2, 90 - (rows-1)*yStep/2) : 64;
+    const xStep = portrait ? 31 : 17, yStep = portrait ? 11.9 : 26;
+    const yMid = portrait ? clamp(58.5, 40 + (rows-1)*yStep/2, 92 - (rows-1)*yStep/2) : 64;
     for(let i=0;i<count;i++){
       const r=Math.floor(i/perRow), inRow=Math.min(perRow, count-r*perRow), c=i-r*perRow;
       const x = 50 + (c-(inRow-1)/2)*xStep;
@@ -372,7 +383,7 @@
   const defaultBg = () => ({type:'media', color:'#16391d', media:'builtin', mediaName:BUILTIN_BG.name, ref:null, fit:'contain', dim:0});
   const defaults = () => {
     const pos=rowPositions(5);
-    return { layers:[], code:DEFAULT_CODE, title:'', exclusive:true, fadeMs:800, size:100, bg:defaultBg(), buttons:pos.map((p,i)=>newButton(i+1,p.x,p.y)) };
+    return { btnStyle:'frame', layers:[], code:DEFAULT_CODE, title:'', exclusive:true, fadeMs:800, size:100, bg:defaultBg(), buttons:pos.map((p,i)=>newButton(i+1,p.x,p.y)) };
   };
   function normalize(src){
     const d=defaults(); if(!src || !Array.isArray(src.buttons)) return d;
@@ -383,6 +394,7 @@
     c.buttons.forEach(b=>{ if(b.media && typeof b.media!=='object') b.media=null; });
     c.layers=Array.isArray(src.layers)? src.layers.filter(l=>l && l.id && (String(l.src).startsWith('builtin:') || l.ref)).map(l=>Object.assign({x:50,y:30,w:16,opacity:100},l)) : [];
     if(!/^\d{4,8}$/.test(String(c.code))) c.code=DEFAULT_CODE;
+    if(c.btnStyle!=='solid') c.btnStyle='frame';
     delete c.showStopAll; delete c.v;
     return c;
   }
@@ -631,6 +643,7 @@
     cfg.buttons.forEach(b=>renderPad(b.id));
     $('#showTitle').textContent=cfg.title||'';
     $('#pads').style.setProperty('--scale', (clamp(+cfg.size||100,50,200)/100).toFixed(2));
+    $('#pads').className = 'style-'+cfg.btnStyle;
   }
   function rebuildAll(){
     const ids=new Set(cfg.buttons.map(b=>b.id)); for(const id of [...players.keys()]) if(!ids.has(id)) dropPlayer(id);
@@ -819,6 +832,7 @@
     $('#pPreview').style.display = p.audio ? '' : 'none';
     $('#pPreview').textContent = p.playing ? '■ Stop' : '▶ Preview';
     document.querySelectorAll('#pSwatches .sw').forEach(s=>s.classList.toggle('on', s.dataset.c===b.color));
+    $('#pColourField').style.display = cfg.btnStyle==='solid' ? '' : 'none';
     $('#pVol').value=b.volume; $('#pVolVal').textContent=b.volume+'%';
     $('#pLoop').checked=!!b.loop;
     document.querySelectorAll('#pTapSeg button').forEach(x=>x.classList.toggle('on', x.dataset.v===b.tap));
@@ -839,7 +853,7 @@
     if(f.size>11*1024*1024){ toast('That file is too large to publish — please use a compressed MP3 or M4A under 11 MB'); return; }
     const ref=await putMedia(f);
     b.media=ref;
-    if(/^Track \d+$/.test(b.label) || !b.label) b.label=f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' ').replace(/\s+/g,' ').trim().slice(0,60);
+    if(/^Track \d+$/.test(b.label) || !b.label) b.label=f.name.replace(/\.[^.]+$/,'').replace(/[_]+/g,' ').replace(/\s+/g,' ').trim().slice(0,80);
     loadPlayer(id, blobs.get(ref.key), ref.key); fillPadEditor(); renderPad(id);
     save(); toast('Track loaded — press Publish to send it to the iPads');
   }
@@ -881,6 +895,7 @@
   /* ---------------- Settings ---------------- */
   function fillSettings(){
     $('#sTitle').value=cfg.title; $('#sExclusive').checked=cfg.exclusive;
+    document.querySelectorAll('#sStyleSeg button').forEach(x=>x.classList.toggle('on', x.dataset.v===cfg.btnStyle));
     $('#sSize').value=cfg.size; $('#sSizeVal').textContent=cfg.size+'%';
     $('#sFade').value=cfg.fadeMs; $('#sFadeVal').textContent = cfg.fadeMs? (cfg.fadeMs/1000).toFixed(1)+'s':'off';
     $('#sCode1').value=$('#sCode2').value='';
@@ -892,6 +907,7 @@
   $('#sTitle').addEventListener('input',e=>{ cfg.title=e.target.value; $('#showTitle').textContent=cfg.title; save(); });
   $('#sExclusive').addEventListener('change',e=>{ cfg.exclusive=e.target.checked; save(); });
   $('#sSize').addEventListener('input',e=>{ cfg.size=+e.target.value; $('#sSizeVal').textContent=cfg.size+'%'; renderAll(); save(); });
+  $('#sStyleSeg').addEventListener('click',e=>{ const v=e.target.dataset&&e.target.dataset.v; if(!v) return; cfg.btnStyle=v; save(); renderAll(); fillSettings(); });
   $('#sTidy').addEventListener('click',()=>{ const pos=rowPositions(cfg.buttons.length); cfg.buttons.forEach((b,i)=>{ b.x=pos[i].x; b.y=pos[i].y; placePad(b.id); }); save(); toast('Buttons lined up'); });
   $('#sFade').addEventListener('input',e=>{ cfg.fadeMs=+e.target.value; $('#sFadeVal').textContent=cfg.fadeMs?(cfg.fadeMs/1000).toFixed(1)+'s':'off'; save(); });
   ['#sCode1','#sCode2'].forEach(s=>$(s).addEventListener('input',e=>{ e.target.value=e.target.value.replace(/\D/g,''); }));

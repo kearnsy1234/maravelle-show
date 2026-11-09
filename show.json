@@ -1,15 +1,15 @@
 {
  "v": 6,
- "rev": "rounded-1794211088",
- "at": 1794211088493,
- "app": 1794211088,
+ "rev": "voices-1794213493",
+ "at": 1794213479554,
+ "app": 1794213493,
  "cfg": {
   "bg": {
-   "color": "#16391d",
+   "color": "#0c1a09",
    "dim": 0,
    "fit": "contain",
    "media": "builtin",
-   "mediaName": "Ghaf Woods forest",
+   "mediaName": "The Voices of Ghaf",
    "ref": null,
    "type": "media"
   },
@@ -17,7 +17,7 @@
    {
     "color": "#2f7d4a",
     "id": "mw7v17m8je6y3",
-    "label": "Neil Carruthers - Morning Walk on",
+    "label": "Neil Carruthers\nMorning Walk On",
     "loop": false,
     "media": {
      "key": "m-mw7vpp7pkjxyf",
@@ -28,13 +28,13 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 38.3,
-    "y": 39.4
+    "x": 34.5,
+    "y": 46.6
    },
    {
     "color": "#2f7d4a",
     "id": "mw7v17m84mlo1",
-    "label": "PreShow (House Open)",
+    "label": "PreShow\n(House Open)",
     "loop": false,
     "media": {
      "key": "m-mw7vqrzwywt3z",
@@ -45,13 +45,13 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 61.7,
-    "y": 39.4
+    "x": 65.5,
+    "y": 46.6
    },
    {
     "color": "#2f7d4a",
     "id": "mw7v17m85div8",
-    "label": "Post Event Networking",
+    "label": "Post Event\nNetworking",
     "loop": false,
     "media": {
      "key": "m-mw7vqx9d587lh",
@@ -62,13 +62,13 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 38.3,
-    "y": 57.0
+    "x": 34.5,
+    "y": 58.5
    },
    {
     "color": "#2f7d4a",
     "id": "mw7v17m8gp75b",
-    "label": "Optional Followup",
+    "label": "Optional\nFollowup",
     "loop": false,
     "media": {
      "key": "m-mw7vr3i3kbyy1",
@@ -79,13 +79,13 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 61.7,
-    "y": 57.0
+    "x": 65.5,
+    "y": 58.5
    },
    {
     "color": "#2f7d4a",
     "id": "mw7v17m8pzksa",
-    "label": "Final Call 2minutes",
+    "label": "Final Call\n2 minutes",
     "loop": false,
     "media": {
      "key": "m-mw7vr8b8canqc",
@@ -97,7 +97,7 @@
     "tap": "stop",
     "volume": 100,
     "x": 50,
-    "y": 74.6
+    "y": 70.3
    }
   ],
   "code": "1234",
@@ -109,12 +109,22 @@
     "src": "builtin:ghaf",
     "ref": null,
     "x": 50,
-    "y": 22.5,
-    "w": 34.0,
+    "y": 21.9,
+    "w": 25.6,
+    "opacity": 100
+   },
+   {
+    "id": "voices-title",
+    "src": "builtin:voices",
+    "ref": null,
+    "x": 50,
+    "y": 29.8,
+    "w": 44.4,
     "opacity": 100
    }
   ],
   "size": 100,
-  "title": ""
+  "title": "",
+  "btnStyle": "frame"
  }
 }
