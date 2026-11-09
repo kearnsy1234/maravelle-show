@@ -1,15 +1,15 @@
 {
  "v": 6,
- "rev": "bg-ghaf-1794208280",
- "at": 1794208280487,
- "app": 1794208280,
+ "rev": "layout-1794208488",
+ "at": 1794208488545,
+ "app": 1794208488,
  "cfg": {
   "bg": {
    "color": "#16391d",
    "dim": 0,
    "fit": "contain",
    "media": "builtin",
-   "mediaName": "Ghaf Woods",
+   "mediaName": "Ghaf Woods forest",
    "ref": null,
    "type": "media"
   },
@@ -28,8 +28,8 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 33,
-    "y": 50
+    "x": 38.3,
+    "y": 39.4
    },
    {
     "color": "#2f7d4a",
@@ -45,8 +45,8 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 67,
-    "y": 50
+    "x": 61.7,
+    "y": 39.4
    },
    {
     "color": "#2f7d4a",
@@ -62,8 +62,8 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 33,
-    "y": 67
+    "x": 38.3,
+    "y": 57.0
    },
    {
     "color": "#2f7d4a",
@@ -79,8 +79,8 @@
     },
     "tap": "stop",
     "volume": 100,
-    "x": 67,
-    "y": 67
+    "x": 61.7,
+    "y": 57.0
    },
    {
     "color": "#2f7d4a",
@@ -97,13 +97,23 @@
     "tap": "stop",
     "volume": 100,
     "x": 50,
-    "y": 84
+    "y": 74.6
    }
   ],
   "code": "1234",
   "exclusive": true,
   "fadeMs": 800,
-  "layers": [],
+  "layers": [
+   {
+    "id": "ghaf-logo",
+    "src": "builtin:ghaf",
+    "ref": null,
+    "x": 50,
+    "y": 22.5,
+    "w": 34.0,
+    "opacity": 100
+   }
+  ],
   "size": 100,
   "title": ""
  }
