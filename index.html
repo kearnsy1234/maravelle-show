@@ -13,16 +13,19 @@
 <link rel="icon" href="assets/icon-192.png">
 <title>Maravelle Show Player</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#f4f6fb; --ink-dim:rgba(244,246,251,.62); --ink-faint:rgba(244,246,251,.38);
     --panel:#11141d; --panel-2:#181c28; --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.18);
     --accent:#ebb08c; --danger:#ff5a5f;
     --font:'Jost',system-ui,-apple-system,Segoe UI,sans-serif;
-    --btn-font:'Cormorant Garamond',Georgia,serif;
+    --btn-font:'IvyMode',Georgia,serif;
     --mono:'Jost',system-ui,sans-serif;
   }
+  @font-face{font-family:'IvyMode';src:url(assets/fonts/ivymode-regular.woff2) format('woff2');font-weight:400;font-style:normal;font-display:block}
+  @font-face{font-family:'IvyMode';src:url(assets/fonts/ivymode-semibold.woff2) format('woff2');font-weight:600;font-style:normal;font-display:block}
+  @font-face{font-family:'IvyMode';src:url(assets/fonts/ivymode-thin.woff2) format('woff2');font-weight:250;font-style:normal;font-display:block}
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:#05060a;color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent}
   body.hide-cursor, body.hide-cursor *{cursor:none!important}
@@ -72,7 +75,7 @@
   .pad.empty{opacity:.45}
   /* Framed style (from the supplied button artwork) */
   #pads.style-frame .pad{width:calc(var(--sw,768px) * .262 * var(--scale,1));aspect-ratio:860/400;background:url(assets/button-frame.png) center/100% 100% no-repeat;
-       border-radius:3.3% / 7.1%;color:#f6f1e8;font-family:var(--btn-font);font-weight:500;font-size:calc(var(--sw,768px) * .0235 * var(--scale,1));line-height:1.12;
+       border-radius:3.3% / 7.1%;color:#f6f1e8;font-family:var(--btn-font);font-weight:400;font-size:calc(var(--sw,768px) * .0235 * var(--scale,1));line-height:1.22;
        padding:calc(var(--sw,768px) * .02 * var(--scale,1));letter-spacing:.005em}
   #pads.style-frame .pad.playing{background-color:rgba(246,241,232,.10);box-shadow:0 0 0 2px rgba(246,241,232,.85), 0 0 calc(var(--sw,768px) * .03) rgba(246,241,232,.25)}
   #pads.style-frame .pad.empty{opacity:.45}
@@ -351,7 +354,7 @@
   };
   const BUILTIN_BG = {name:'The Voices of Ghaf', src:'assets/bg-voices.webp'};
   const REPO = {owner:'kearnsy1234', repo:'maravelle-show', branch:'main'};
-  const APP_BUILD = 1794213493;
+  const APP_BUILD = 1794213566;
   const POLL_MS = 30000;
   const DATA_VERSION = 6;
   const DEFAULT_CODE = '1234';
