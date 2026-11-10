@@ -1,7 +1,7 @@
 {
  "v": 6,
- "rev": "interviews-1794245882",
- "at": 1794245882491,
+ "rev": "titles-1794294091",
+ "at": 1794294091170,
  "app": 1794213566,
  "cfg": {
   "bg": {
@@ -16,7 +16,7 @@
   "buttons": [
    {
     "id": "b-int1",
-    "label": "Interview 1",
+    "label": "Introducing\nLyra",
     "color": "#2f7d4a",
     "volume": 100,
     "loop": false,
@@ -33,7 +33,7 @@
    },
    {
     "id": "b-int2",
-    "label": "Interview 2",
+    "label": "Designing\nGhaf Woods",
     "color": "#2f7d4a",
     "volume": 100,
     "loop": false,
@@ -50,7 +50,7 @@
    },
    {
     "id": "b-int3",
-    "label": "Interview 3",
+    "label": "Bringing the Forest\nExperience to Life",
     "color": "#2f7d4a",
     "volume": 100,
     "loop": false,
@@ -67,7 +67,7 @@
    },
    {
     "id": "b-int4",
-    "label": "Interview 4",
+    "label": "Ghaf Woods:\nDesigned by Nature",
     "color": "#2f7d4a",
     "volume": 100,
     "loop": false,
@@ -84,7 +84,7 @@
    },
    {
     "id": "b-int5",
-    "label": "Interview 5",
+    "label": "Ghaf Woods:\nThe Masterplan",
     "color": "#2f7d4a",
     "volume": 100,
     "loop": false,
@@ -101,7 +101,7 @@
    },
    {
     "id": "b-int6",
-    "label": "Interview 6",
+    "label": "Sustainability:\nThe Foundation\nof Ghaf Woods",
     "color": "#2f7d4a",
     "volume": 100,
     "loop": false,
