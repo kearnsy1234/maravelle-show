@@ -1,8 +1,8 @@
 {
  "v": 6,
- "rev": "titles-1794294091",
- "at": 1794294091170,
- "app": 1794213566,
+ "rev": "title-woods-1794296090",
+ "at": 1794296090558,
+ "app": 1794296090,
  "cfg": {
   "bg": {
    "color": "#0c1a09",
@@ -132,11 +132,11 @@
    },
    {
     "id": "voices-title",
-    "src": "builtin:voices",
+    "src": "builtin:voices-woods",
     "ref": null,
     "x": 50,
     "y": 33.34,
-    "w": 44.4,
+    "w": 61.23,
     "opacity": 100
    }
   ],
